@@ -12,6 +12,7 @@ import PosterEdukasi from './components/PosterEdukasi';
 import CounselorDashboard from './components/CounselorDashboard';
 import CaseMonitoring from './components/CaseMonitoring';
 import SettingsProfil from './components/SettingsProfil';
+import AdminDashboard from './components/AdminDashboard';
 
 import { 
   Shield, 
@@ -60,7 +61,9 @@ export default function App() {
     saveAppDatabase(db);
     
     // Redirect appropriately
-    if (user.role === 'gurubk') {
+    if (user.role === 'admin') {
+      setActiveTab('admin-dashboard');
+    } else if (user.role === 'gurubk') {
       setActiveTab('dashboard-bk');
     } else {
       setActiveTab('dashboard');
@@ -172,7 +175,11 @@ export default function App() {
                   {currentUser.nama.split(' ')[0]} {currentUser.nama.split(' ')[1] || ''}
                 </h4>
                 <p className="text-[9px] text-blue-605 font-bold uppercase tracking-wider mt-0.5">
-                  {currentUser.role === 'gurubk' ? 'Konselor BK' : `Siswa • ${currentUser.kelas}`}
+                  {currentUser.role === 'admin' 
+                    ? 'Administrator' 
+                    : currentUser.role === 'gurubk' 
+                      ? 'Konselor BK' 
+                      : `Siswa • ${currentUser.kelas}`}
                 </p>
               </div>
             </div>
@@ -183,17 +190,21 @@ export default function App() {
                 Navigasi Menu
               </p>
               
-              {(isSiswa ? [
+              {(currentUser.role === 'admin' ? [
+                { id: 'admin-dashboard', label: 'Dashboard Admin', icon: LayoutDashboard },
+                { id: 'posters', label: 'Pusat Poster Edukasi', icon: BookOpen },
+                { id: 'settings', label: 'Pengaturan Profil', icon: Settings },
+              ] : currentUser.role === 'gurubk' ? [
+                { id: 'dashboard-bk', label: 'Dashboard Guru BK', icon: LayoutDashboard },
+                { id: 'monitoring', label: 'Monitoring Kasus', icon: FolderLock },
+                { id: 'counseling', label: 'Layanan E-Counseling', icon: MessageSquare },
+                { id: 'posters', label: 'Pusat Poster Edukasi', icon: BookOpen },
+                { id: 'settings', label: 'Pengaturan Profil', icon: Settings },
+              ] : [
                 { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard },
                 { id: 'asesmen', label: 'Asesmen Kebutuhan', icon: ClipboardCheck },
                 { id: 'pengaduan', label: 'Lapor Pengaduan', icon: AlertTriangle },
                 { id: 'counseling', label: 'E-Counseling Chat', icon: MessageSquare },
-                { id: 'posters', label: 'Pusat Poster Edukasi', icon: BookOpen },
-                { id: 'settings', label: 'Pengaturan Profil', icon: Settings },
-              ] : [
-                { id: 'dashboard-bk', label: 'Dashboard Guru BK', icon: LayoutDashboard },
-                { id: 'monitoring', label: 'Monitoring Kasus', icon: FolderLock },
-                { id: 'counseling', label: 'Layanan E-Counseling', icon: MessageSquare },
                 { id: 'posters', label: 'Pusat Poster Edukasi', icon: BookOpen },
                 { id: 'settings', label: 'Pengaturan Profil', icon: Settings },
               ]).map((tab) => {
@@ -292,7 +303,7 @@ export default function App() {
                       {currentUser.nama.split(' ')[0]} {currentUser.nama.split(' ')[1] || ''}
                     </h4>
                     <p className="text-[9px] text-blue-600 font-bold capitalize leading-none tracking-wide font-mono mt-0.5">
-                      {currentUser.role === 'gurubk' ? 'Konselor BK' : `Siswa`}
+                      {currentUser.role === 'admin' ? 'Administrator' : currentUser.role === 'gurubk' ? 'Konselor BK' : `Siswa`}
                     </p>
                   </div>
                 </button>
@@ -317,17 +328,21 @@ export default function App() {
         {/* Quick Horizontal Swipeable Sub-Navigator Tabs - Exceptional user-experience on Phone / Tablet */}
         <div className="lg:hidden mb-4 overflow-x-auto pb-2 scrollbar-none" id="mobile-quick-nav">
           <div className="flex space-x-2 whitespace-nowrap px-1">
-            {(isSiswa ? [
+            {(currentUser.role === 'admin' ? [
+              { id: 'admin-dashboard', label: 'Admin', icon: LayoutDashboard },
+              { id: 'posters', label: 'Edukasi', icon: BookOpen },
+              { id: 'settings', label: 'Profil Saya', icon: Settings },
+            ] : currentUser.role === 'gurubk' ? [
+              { id: 'dashboard-bk', label: 'Dashboard BK', icon: LayoutDashboard },
+              { id: 'monitoring', label: 'Monitoring', icon: FolderLock },
+              { id: 'counseling', label: 'Layanan Chat', icon: MessageSquare },
+              { id: 'posters', label: 'Edukasi', icon: BookOpen },
+              { id: 'settings', label: 'Profil Saya', icon: Settings },
+            ] : [
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
               { id: 'asesmen', label: 'Asesmen', icon: ClipboardCheck },
               { id: 'pengaduan', label: 'Lapor', icon: AlertTriangle },
               { id: 'counseling', label: 'Chat BK', icon: MessageSquare },
-              { id: 'posters', label: 'Edukasi', icon: BookOpen },
-              { id: 'settings', label: 'Profil Saya', icon: Settings },
-            ] : [
-              { id: 'dashboard-bk', label: 'Dashboard BK', icon: LayoutDashboard },
-              { id: 'monitoring', label: 'Monitoring', icon: FolderLock },
-              { id: 'counseling', label: 'Layanan Chat', icon: MessageSquare },
               { id: 'posters', label: 'Edukasi', icon: BookOpen },
               { id: 'settings', label: 'Profil Saya', icon: Settings },
             ]).map((tab) => {
@@ -360,7 +375,46 @@ export default function App() {
                 Main Navigator
               </p>
 
-              {isSiswa ? (
+              {currentUser.role === 'admin' ? (
+                /* Admin Links */
+                <nav className="space-y-1" id="admin-navigation">
+                  <button
+                    onClick={() => setActiveTab('admin-dashboard')}
+                    className={`w-full sidebar-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-bold transition text-left cursor-pointer ${
+                      activeTab === 'admin-dashboard' 
+                        ? 'sidebar-active text-purple-600' 
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <LayoutDashboard className="w-4 h-4 text-purple-600" />
+                    <span>Dashboard Admin</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('posters')}
+                    className={`w-full sidebar-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-bold transition text-left cursor-pointer ${
+                      activeTab === 'posters' 
+                        ? 'sidebar-active text-purple-600' 
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4 text-purple-600" />
+                    <span>Pusat Poster Edukasi</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('settings')}
+                    className={`w-full sidebar-item flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-bold transition text-left cursor-pointer ${
+                      activeTab === 'settings' 
+                        ? 'sidebar-active text-purple-600' 
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 text-purple-600" />
+                    <span>Pengaturan Profil</span>
+                  </button>
+                </nav>
+              ) : isSiswa ? (
                 /* Siswa Links */
                 <nav className="space-y-1" id="siswa-navigation">
                   <button
@@ -623,6 +677,13 @@ export default function App() {
                     setActiveTab(tab);
                   }
                 }}
+              />
+            )}
+
+            {activeTab === 'admin-dashboard' && currentUser.role === 'admin' && (
+              <AdminDashboard 
+                currentUser={currentUser} 
+                onRefreshDatabase={refreshComponentDb} 
               />
             )}
 

@@ -35,6 +35,14 @@ export const SYSTEM_USERS: User[] = [
     role: 'gurubk',
     fotoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
     email: 'siti.rahmawati@school.sch.id'
+  },
+  {
+    id: 'user_admin_1',
+    username: 'admin',
+    nama: 'Dr. H. Hermawan, M.Si',
+    role: 'admin',
+    fotoUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200',
+    email: 'admin.care@school.sch.id'
   }
 ];
 
