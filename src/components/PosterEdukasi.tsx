@@ -53,6 +53,17 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
   const [editImageUrl, setEditImageUrl] = useState('');
   const [isEditDragging, setIsEditDragging] = useState(false);
 
+  // Custom alert & confirmation modal states
+  const [posterIdToDelete, setPosterIdToDelete] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
+
   const db = getAppDatabase();
   const posters = db.posters;
 
@@ -127,7 +138,7 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
   const handleCreatePoster = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle || !newDescription || !newContent) {
-      alert('Mohon isi semua field wajib!');
+      showToast('Mohon isi semua field wajib!', 'error');
       return;
     }
 
@@ -173,22 +184,26 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
     setShowUploadForm(false);
     
     onRefreshDatabase();
-    alert('Poster edukasi bimbingan konseling berhasil dipublikasikan!');
+    showToast('Poster edukasi bimbingan konseling berhasil dipublikasikan!', 'success');
   };
 
   const handleDeletePoster = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (confirm('Apakah Anda yakin ingin menghapus poster edukasi ini? Tindakan ini tidak dapat dibatalkan.')) {
-      const currentDb = getAppDatabase();
-      currentDb.posters = currentDb.posters.filter((p: any) => p.id !== id);
-      saveAppDatabase(currentDb);
-      
-      if (selectedPoster?.id === id) {
-        setSelectedPoster(null);
-      }
-      onRefreshDatabase();
-      alert('Poster edukasi bimbingan konseling berhasil dihapus!');
+    setPosterIdToDelete(id);
+  };
+
+  const confirmDeletePoster = () => {
+    if (!posterIdToDelete) return;
+    const currentDb = getAppDatabase();
+    currentDb.posters = currentDb.posters.filter((p: any) => p.id !== posterIdToDelete);
+    saveAppDatabase(currentDb);
+    
+    if (selectedPoster?.id === posterIdToDelete) {
+      setSelectedPoster(null);
     }
+    setPosterIdToDelete(null);
+    onRefreshDatabase();
+    showToast('Poster bimbingan konseling berhasil dihapus!', 'success');
   };
 
   const handleOpenEdit = (poster: EducationalPoster, e: React.MouseEvent) => {
@@ -239,7 +254,7 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
     e.preventDefault();
     if (!editingPoster) return;
     if (!editTitle || !editDescription || !editContent) {
-      alert('Mohon isi semua field wajib!');
+      showToast('Mohon isi semua field wajib!', 'error');
       return;
     }
 
@@ -295,7 +310,7 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
     // Reset states
     setEditingPoster(null);
     onRefreshDatabase();
-    alert('Poster bimbingan konseling berhasil diperbarui!');
+    showToast('Poster bimbingan konseling berhasil diperbarui!', 'success');
   };
 
   const isGuruBK = currentUser.role === 'gurubk';
@@ -900,6 +915,64 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {posterIdToDelete && (
+        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4 z-55 animate-fade-in" id="delete-confirmation-modal">
+          <div className="bg-white rounded-3xl max-w-sm w-full shadow-2xl p-6 relative text-center space-y-4">
+            <div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 animate-pulse" />
+            </div>
+            
+            <div className="space-y-1">
+              <h3 className="text-sm font-extrabold text-slate-900">Hapus Poster Edukasi?</h3>
+              <p className="text-[11px] text-slate-500 leading-normal">
+                Apakah Anda benar-benar yakin ingin menghapus poster ini? Tindakan ini bersifat permanen dan tidak dapat diubah kembali.
+              </p>
+            </div>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                onClick={() => setPosterIdToDelete(null)}
+                className="flex-1 py-3 bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Batalkan
+              </button>
+              <button
+                onClick={confirmDeletePoster}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md shadow-red-100 transition cursor-pointer"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Real-time Toast Alerts overlay */}
+      {toast && (
+        <div 
+          className="fixed bottom-6 right-6 z-55 animate-slide-in"
+          id="toast-notification-banner"
+        >
+          <div className={`px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-3 text-xs font-bold border text-left ${
+            toast.type === 'success' 
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+              : toast.type === 'error'
+                ? 'bg-rose-50 border-rose-200 text-rose-800'
+                : 'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+            <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+            <span>{toast.message}</span>
+            <button 
+              onClick={() => setToast(null)}
+              className="ml-3 p-1 hover:bg-black/5 rounded-md transition cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}
