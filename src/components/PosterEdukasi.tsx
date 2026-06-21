@@ -14,7 +14,9 @@ import {
   Upload,
   Image as ImageIcon,
   CheckCircle,
-  FileText
+  FileText,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 
 interface PosterEdukasiProps {
@@ -40,6 +42,16 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
   const [newReadTime, setNewReadTime] = useState('3 Menit Baca');
   const [imageUrl, setImageUrl] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+
+  // Edit poster states
+  const [editingPoster, setEditingPoster] = useState<EducationalPoster | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState<EducationalPoster['category']>('Kesehatan Mental');
+  const [editDescription, setEditDescription] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editReadTime, setEditReadTime] = useState('3 Menit Baca');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [isEditDragging, setIsEditDragging] = useState(false);
 
   const db = getAppDatabase();
   const posters = db.posters;
@@ -164,6 +176,128 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
     alert('Poster edukasi bimbingan konseling berhasil dipublikasikan!');
   };
 
+  const handleDeletePoster = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (confirm('Apakah Anda yakin ingin menghapus poster edukasi ini? Tindakan ini tidak dapat dibatalkan.')) {
+      const currentDb = getAppDatabase();
+      currentDb.posters = currentDb.posters.filter((p: any) => p.id !== id);
+      saveAppDatabase(currentDb);
+      
+      if (selectedPoster?.id === id) {
+        setSelectedPoster(null);
+      }
+      onRefreshDatabase();
+      alert('Poster edukasi bimbingan konseling berhasil dihapus!');
+    }
+  };
+
+  const handleOpenEdit = (poster: EducationalPoster, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingPoster(poster);
+    setEditTitle(poster.title);
+    setEditCategory(poster.category);
+    setEditDescription(poster.description);
+    setEditContent(poster.contentMarkdown);
+    setEditReadTime(poster.readTime);
+    setEditImageUrl(poster.imageUrl || '');
+  };
+
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImageUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsEditDragging(true);
+  };
+
+  const handleEditDragLeave = () => {
+    setIsEditDragging(false);
+  };
+
+  const handleEditDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsEditDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImageUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditPoster = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPoster) return;
+    if (!editTitle || !editDescription || !editContent) {
+      alert('Mohon isi semua field wajib!');
+      return;
+    }
+
+    const currentDb = getAppDatabase();
+    
+    // Fallback beautiful illustration based on category
+    let finalImageUrl = editImageUrl;
+    if (!finalImageUrl) {
+      if (editCategory === 'Kesehatan Mental') {
+        finalImageUrl = 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800';
+      } else if (editCategory === 'Strategi Belajar') {
+        finalImageUrl = 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=800';
+      } else if (editCategory === 'Etika Digital') {
+        finalImageUrl = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800';
+      } else if (editCategory === 'Pencegahan Bullying') {
+        finalImageUrl = 'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&q=80&w=800';
+      } else if (editCategory === 'Pengembangan Diri') {
+        finalImageUrl = 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800';
+      } else {
+        finalImageUrl = 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=800';
+      }
+    }
+
+    currentDb.posters = currentDb.posters.map((p: any) => {
+      if (p.id === editingPoster.id) {
+        return {
+          ...p,
+          title: editTitle,
+          category: editCategory,
+          description: editDescription,
+          contentMarkdown: editContent,
+          readTime: editReadTime,
+          imageUrl: finalImageUrl
+        };
+      }
+      return p;
+    });
+
+    saveAppDatabase(currentDb);
+
+    if (selectedPoster?.id === editingPoster.id) {
+      setSelectedPoster({
+        ...selectedPoster,
+        title: editTitle,
+        category: editCategory,
+        description: editDescription,
+        contentMarkdown: editContent,
+        readTime: editReadTime,
+        imageUrl: finalImageUrl
+      });
+    }
+
+    // Reset states
+    setEditingPoster(null);
+    onRefreshDatabase();
+    alert('Poster bimbingan konseling berhasil diperbarui!');
+  };
+
   const isGuruBK = currentUser.role === 'gurubk';
 
   return (
@@ -250,7 +384,25 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
                 </span>
 
                 {/* Micro interaction buttons */}
-                <div className="absolute top-4 right-4 flex gap-1.5">
+                <div className="absolute top-4 right-4 flex gap-1.5 z-10">
+                  {isGuruBK && (
+                    <>
+                      <button
+                        onClick={(e) => handleOpenEdit(poster, e)}
+                        className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-full shadow-sm transition border border-amber-200 cursor-pointer"
+                        title="Edit Poster"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeletePoster(poster.id, e)}
+                        className="p-2 bg-red-50 hover:bg-red-100 text-red-650 rounded-full shadow-sm transition border border-red-200 cursor-pointer"
+                        title="Hapus Poster"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={(e) => toggleLike(poster.id, e)}
                     className="p-2 bg-white/95 backdrop-blur-xs hover:bg-white rounded-full text-slate-500 hover:text-red-500 shadow-sm transition cursor-pointer"
@@ -556,7 +708,25 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
                     </button>
                   </div>
 
-                  <div className="flex gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    {isGuruBK && (
+                      <>
+                        <button
+                          onClick={(e) => handleOpenEdit(selectedPoster, e)}
+                          className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[10px] font-bold border border-amber-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                          title="Edit Poster Ini"
+                        >
+                          <Pencil className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <button
+                          onClick={(e) => handleDeletePoster(selectedPoster.id, e)}
+                          className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-[10px] font-bold border border-red-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                          title="Hapus Poster Ini"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Hapus
+                        </button>
+                      </>
+                    )}
                     <button
                       onClick={() => { alert('Tautan poster berhasil disalin ke papan klip! Bagikan materi ke wali kelas atau forum chat WhatsApp.'); }}
                       className="px-3 py-2 hover:bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-xl transition flex items-center gap-1 cursor-pointer"
@@ -575,6 +745,161 @@ export default function PosterEdukasi({ currentUser, onRefreshDatabase }: Poster
               </div>
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Poster Modal (For Counselor BK) */}
+      {editingPoster && (
+        <div className="fixed inset-0 bg-slate-950/45 backdrop-blur-xs flex items-center justify-center p-4 z-55 animate-fade-in" id="edit-poster-modal">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative text-left space-y-5">
+            <button
+              onClick={() => setEditingPoster(null)}
+              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-900 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+                <Pencil className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900">Ubah & Sunting Poster Bimbingan Konseling</h3>
+              <p className="text-[11px] text-slate-400">Sunting detail informasi materi bimbingan konseling dan konten publikasinya di bawah.</p>
+            </div>
+
+            <form onSubmit={handleEditPoster} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-wide text-slate-500 mb-1">Judul Poster *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Ayo Belajar Efektif di Rumah!"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500 transition text-slate-800"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-wide text-slate-500 mb-1">Kategori Poster *</label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value as EducationalPoster['category'])}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500 transition text-slate-800 font-medium"
+                  >
+                    <option value="Kesehatan Mental">Kesehatan Mental</option>
+                    <option value="Pengembangan Diri">Pengembangan Diri</option>
+                    <option value="Strategi Belajar">Strategi Belajar</option>
+                    <option value="Perencanaan Karier">Perencanaan Karier</option>
+                    <option value="Etika Digital">Etika Digital</option>
+                    <option value="Pencegahan Bullying">Pencegahan Bullying</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-wide text-slate-500 mb-1">Estimasi Waktu Baca *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: 3 Menit Baca"
+                    value={editReadTime}
+                    onChange={(e) => setEditReadTime(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500 transition text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-wide text-slate-500 mb-1">Deskripsi Ringkas *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Tulis ringkasan isi poster atau subjek pembahasannya"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500 transition text-slate-805"
+                />
+              </div>
+
+              {/* Drag and Drop upload block with Click backup */}
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-wide text-slate-500 mb-1">File Gambar Poster / Infografis</label>
+                <div
+                  onDragOver={handleEditDragOver}
+                  onDragLeave={handleEditDragLeave}
+                  onDrop={handleEditDrop}
+                  className={`border-2 border-dashed rounded-2xl p-4 text-center transition flex flex-col items-center justify-center space-y-2 cursor-pointer ${
+                    isEditDragging ? 'border-amber-500 bg-amber-50/50' : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                  onClick={() => document.getElementById('edit-poster-file-picker')?.click()}
+                >
+                  <input
+                    id="edit-poster-file-picker"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditFileChange}
+                    className="hidden"
+                  />
+                  
+                  {editImageUrl ? (
+                    <div className="space-y-2 w-full">
+                      <div className="h-28 overflow-hidden rounded-lg border relative bg-slate-50 max-w-[200px] mx-auto">
+                        <img src={editImageUrl} alt="Uploaded preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditImageUrl('');
+                          }}
+                          className="absolute top-1 right-1 p-1 bg-slate-900/80 hover:bg-slate-900 text-white rounded-full transition"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-green-600 font-bold">Gambar poster terpilih!</p>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-slate-400" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">Tarik gambar poster ke sini atau biarkan kosong</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">atau Klik untuk pilih file baru dari sistem</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-wide text-slate-500 mb-1">Materi/Artikel Pendukung Lengkap *</label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Gunakan format Markdown atau teks biasa paragraf demi paragraf..."
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500 transition text-slate-805 leading-relaxed font-sans"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingPoster(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
+                >
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
