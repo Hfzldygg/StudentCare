@@ -30,7 +30,9 @@ import {
   TrendingUp,
   RefreshCw,
   FolderLock,
-  Settings
+  Settings,
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function App() {
@@ -38,6 +40,7 @@ export default function App() {
   const [isDbLoaded, setIsDbLoaded] = useState(false);
   const [guestView, setGuestView] = useState<'landing' | 'login'>('landing');
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Load user session on start
   useEffect(() => {
@@ -126,30 +129,144 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#FAFBFD] flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900" id="studentcare-app">
       
+      {/* Mobile Slide-out Navigation Drawer Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-55 lg:hidden" id="mobile-menu-drawer">
+          {/* Background shadow overlay */}
+          <div 
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300" 
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
+          
+          {/* Drawer Content Card */}
+          <div className="fixed inset-y-0 left-0 w-72 bg-white shadow-2xl p-6 flex flex-col space-y-6 overflow-y-auto z-10 text-left animate-slide-in">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-blue-600 text-white flex items-center justify-center rounded-lg shadow-xs">
+                  <Shield className="w-4.5 h-4.5" />
+                </div>
+                <span className="text-sm font-bold tracking-tight text-slate-800">
+                  StudentCare BK
+                </span>
+              </div>
+              
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-lg transition cursor-pointer"
+                aria-label="Tutup Menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Profile detail preview inside mobile drawer */}
+            <div className="bg-slate-50/70 p-4 rounded-xl flex items-center space-x-3 text-left">
+              <img
+                src={currentUser.fotoUrl}
+                alt={currentUser.nama}
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-100"
+                referrerPolicy="no-referrer"
+              />
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold text-slate-800 truncate leading-tight">
+                  {currentUser.nama.split(' ')[0]} {currentUser.nama.split(' ')[1] || ''}
+                </h4>
+                <p className="text-[9px] text-blue-605 font-bold uppercase tracking-wider mt-0.5">
+                  {currentUser.role === 'gurubk' ? 'Konselor BK' : `Siswa • ${currentUser.kelas}`}
+                </p>
+              </div>
+            </div>
+
+            {/* Main navigation list */}
+            <nav className="flex-1 space-y-1.5" id="mobile-drawer-nav">
+              <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest px-2 mb-2">
+                Navigasi Menu
+              </p>
+              
+              {(isSiswa ? [
+                { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard },
+                { id: 'asesmen', label: 'Asesmen Kebutuhan', icon: ClipboardCheck },
+                { id: 'pengaduan', label: 'Lapor Pengaduan', icon: AlertTriangle },
+                { id: 'counseling', label: 'E-Counseling Chat', icon: MessageSquare },
+                { id: 'posters', label: 'Pusat Poster Edukasi', icon: BookOpen },
+                { id: 'settings', label: 'Pengaturan Profil', icon: Settings },
+              ] : [
+                { id: 'dashboard-bk', label: 'Dashboard Guru BK', icon: LayoutDashboard },
+                { id: 'monitoring', label: 'Monitoring Kasus', icon: FolderLock },
+                { id: 'counseling', label: 'Layanan E-Counseling', icon: MessageSquare },
+                { id: 'posters', label: 'Pusat Poster Edukasi', icon: BookOpen },
+                { id: 'settings', label: 'Pengaturan Profil', icon: Settings },
+              ]).map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                      isActive 
+                        ? 'bg-blue-50 text-blue-600 font-extrabold' 
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Logout drawer item */}
+            <div className="pt-4 border-t border-slate-100 text-center">
+              <button
+                onClick={handleLogout}
+                className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <LogOut className="w-4 h-4" />
+                Keluar Sesi
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* Top Main Navbar - Modern Corporate / School Branding */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/60 shadow-xs" id="main-header">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             
-            {/* App Logo */}
-            <div className="flex items-center space-x-2.5">
-              <div className="w-10 h-10 bg-blue-600 text-white flex items-center justify-center rounded-xl shadow-md shadow-blue-100">
-                <Shield className="w-5.5 h-5.5" />
-              </div>
-              <div>
-                <span className="text-base font-bold tracking-tight text-slate-800">
-                  Student<span className="text-blue-600">Care</span>
-                </span>
-                <span className="hidden sm:inline-block ml-2 px-2.5 py-0.5 text-[8px] font-extrabold bg-blue-50 text-blue-700 rounded-md tracking-wider uppercase font-mono">
-                  PORTAL LAYANAN BK
-                </span>
+            <div className="flex items-center">
+              {/* Hamburger Toggle Button - only visible on mobile & tablet */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="lg:hidden p-2 -ml-1 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition cursor-pointer mr-2"
+                title="Buka Menu Navigasi"
+              >
+                <Menu className="w-5.5 h-5.5" />
+              </button>
+
+              {/* App Logo */}
+              <div className="flex items-center space-x-2.5">
+                <div className="w-10 h-10 bg-blue-600 text-white flex items-center justify-center rounded-xl shadow-md shadow-blue-100">
+                  <Shield className="w-5.5 h-5.5" />
+                </div>
+                <div className="text-left">
+                  <span className="text-base font-bold tracking-tight text-slate-800 block md:inline-block">
+                    Student<span className="text-blue-600">Care</span>
+                  </span>
+                  <span className="hidden xs:inline-block md:ml-2 px-2.5 py-0.5 text-[8px] font-extrabold bg-blue-50 text-blue-700 rounded-md tracking-wider uppercase font-mono">
+                    PORTAL BK
+                  </span>
+                </div>
               </div>
             </div>
-            {/* Middle Logo Spacer to align header elements neutrally */}
-            <div className="flex-1"></div>
 
             {/* Right side Profile controls */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <button
                 onClick={handleResetDemo}
                 title="Atur Ulang Sinkronisasi Basis Data"
@@ -158,10 +275,10 @@ export default function App() {
                 <RefreshCw className="w-4 h-4" />
               </button>
 
-              <div className="flex items-center space-x-2.5 pl-3 border-l border-slate-200">
+              <div className="flex items-center space-x-2 pl-2 border-l border-slate-200">
                 <button
                   onClick={() => setActiveTab('settings')}
-                  className="flex items-center space-x-2 text-left hover:opacity-80 transition cursor-pointer"
+                  className="flex items-center space-x-2 text-left hover:opacity-85 transition cursor-pointer"
                   title="Buka Pengaturan Profil Anda"
                 >
                   <img
@@ -170,12 +287,12 @@ export default function App() {
                     className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-50"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="hidden sm:block text-left">
-                    <h4 className="text-xs font-bold text-slate-800 leading-tight truncate max-w-[120px]">
+                  <div className="hidden md:block text-left">
+                    <h4 className="text-xs font-bold text-slate-800 leading-tight truncate max-w-[100px]">
                       {currentUser.nama.split(' ')[0]} {currentUser.nama.split(' ')[1] || ''}
                     </h4>
-                    <p className="text-[9px] text-blue-600 font-bold capitalize leading-none tracking-wide font-mono mt-0.5 animate-pulse">
-                      {currentUser.role === 'gurubk' ? 'Konselor BK' : `Siswa • ${currentUser.kelas}`}
+                    <p className="text-[9px] text-blue-600 font-bold capitalize leading-none tracking-wide font-mono mt-0.5">
+                      {currentUser.role === 'gurubk' ? 'Konselor BK' : `Siswa`}
                     </p>
                   </div>
                 </button>
@@ -195,12 +312,49 @@ export default function App() {
       </header>
 
       {/* Main Container Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8" id="app-body">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6" id="app-body">
+
+        {/* Quick Horizontal Swipeable Sub-Navigator Tabs - Exceptional user-experience on Phone / Tablet */}
+        <div className="lg:hidden mb-4 overflow-x-auto pb-2 scrollbar-none" id="mobile-quick-nav">
+          <div className="flex space-x-2 whitespace-nowrap px-1">
+            {(isSiswa ? [
+              { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+              { id: 'asesmen', label: 'Asesmen', icon: ClipboardCheck },
+              { id: 'pengaduan', label: 'Lapor', icon: AlertTriangle },
+              { id: 'counseling', label: 'Chat BK', icon: MessageSquare },
+              { id: 'posters', label: 'Edukasi', icon: BookOpen },
+              { id: 'settings', label: 'Profil Saya', icon: Settings },
+            ] : [
+              { id: 'dashboard-bk', label: 'Dashboard BK', icon: LayoutDashboard },
+              { id: 'monitoring', label: 'Monitoring', icon: FolderLock },
+              { id: 'counseling', label: 'Layanan Chat', icon: MessageSquare },
+              { id: 'posters', label: 'Edukasi', icon: BookOpen },
+              { id: 'settings', label: 'Profil Saya', icon: Settings },
+            ]).map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                    isActive
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-xs shadow-blue-50'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* Side panel menu Navigation tabs selection */}
-          <aside className="lg:col-span-3 space-y-6">
+          <aside className="hidden lg:block lg:col-span-3 space-y-6">
             <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-3 mb-2 text-left">
                 Main Navigator
