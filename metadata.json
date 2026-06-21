@@ -1,0 +1,6 @@
+{
+  "name": "StudentCare",
+  "description": "Student Care and Counseling System - Platform bimbingan konseling digital untuk siswa dan guru BK.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
